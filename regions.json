@@ -1,0 +1,16 @@
+[
+  {
+    "name": "Landkreis Fürstenfeldbruck",
+    "slug": "ffb",
+    "downloadUrl": "https://github.com/CodeForFire/lagebuch-regions/releases/download/ffb-v1/ffb.zip",
+    "sizeBytes": 15782458,
+    "boundingBox": {
+      "minLat": 48.0877067,
+      "minLon": 10.9930275,
+      "maxLat": 48.2967233,
+      "maxLon": 11.4128816
+    },
+    "builtAt": "2026-08-31",
+    "attribution": "© OpenStreetMap contributors (ODbL). Höhendaten: SRTM (NASA/USGS, gemeinfrei)."
+  }
+]
