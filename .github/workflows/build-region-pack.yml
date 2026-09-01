@@ -1,0 +1,104 @@
+name: Build region pack
+
+on:
+  workflow_call:
+    inputs:
+      slug:
+        description: Short lowercase pack id, e.g. "ffb"
+        type: string
+        required: true
+      name:
+        description: Region display name
+        type: string
+        required: true
+      relation_id:
+        description: OSM relation ID for the Kreis boundary
+        type: string
+        required: true
+      issue_number:
+        description: Originating issue number, for status comments. Empty for scheduled runs.
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      SLUG: ${{ inputs.slug }}
+      NAME: ${{ inputs.name }}
+      RELATION_ID: ${{ inputs.relation_id }}
+      ISSUE_NUMBER: ${{ inputs.issue_number }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install osmium-tool
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y osmium-tool
+
+      - name: Build pack
+        id: build
+        run: bash scripts/run_build.sh 2>&1 | tee build_log.txt
+
+      - name: Comment build failure on issue
+        if: failure() && steps.build.outcome == 'failure' && inputs.issue_number != ''
+        run: |
+          {
+            echo "Build failed for \`$SLUG\`. Last output:"
+            echo '```'
+            tail -n 60 build_log.txt
+            echo '```'
+            echo "Full log: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          } > failure_comment.md
+          gh issue comment "$ISSUE_NUMBER" --body-file failure_comment.md
+
+      - name: Upsert manifest
+        id: manifest
+        run: |
+          ZIP_PATH="build/$SLUG.zip" python3 scripts/upsert_manifest.py
+
+      - name: Commit manifest changes
+        run: |
+          BRANCH="${{ steps.manifest.outputs.branch }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add regions.json region-sources.json
+          git commit -m "Publish $SLUG ${{ steps.manifest.outputs.tag }}"
+          git push origin "HEAD:$BRANCH"
+
+      - name: Create release
+        run: |
+          TAG="${{ steps.manifest.outputs.tag }}"
+          gh release create "$TAG" "build/$SLUG.zip" \
+            --title "$NAME ($TAG)" \
+            --notes "Built from OSM relation $RELATION_ID. © OpenStreetMap contributors (ODbL). Höhendaten: SRTM (NASA/USGS, gemeinfrei)."
+
+      - name: Open pull request
+        id: pr
+        run: |
+          BRANCH="${{ steps.manifest.outputs.branch }}"
+          TAG="${{ steps.manifest.outputs.tag }}"
+          URL=$(gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "Publish $NAME ($TAG)" \
+            --body "Automated region pack build for \`$SLUG\` (OSM relation $RELATION_ID), tag \`$TAG\`.")
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Comment success on issue
+        if: inputs.issue_number != ''
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --body "Built \`${{ steps.manifest.outputs.tag }}\` and opened ${{ steps.pr.outputs.url }} for review."

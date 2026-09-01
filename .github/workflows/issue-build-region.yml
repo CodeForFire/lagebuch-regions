@@ -1,0 +1,91 @@
+name: Build region pack from issue
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  prepare:
+    if: >-
+      github.event.label.name == 'approved' &&
+      (contains(github.event.issue.labels.*.name, 'region-request') ||
+       contains(github.event.issue.labels.*.name, 'region-update'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+    outputs:
+      proceed: ${{ steps.gate.outputs.proceed }}
+      slug: ${{ steps.fields.outputs.slug }}
+      name: ${{ steps.fields.outputs.name }}
+      relation_id: ${{ steps.fields.outputs.relation_id }}
+    steps:
+      - name: Check sender has write access
+        id: gate
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              username: context.payload.sender.login,
+            });
+            const allowed = ['admin', 'write'].includes(data.permission);
+            core.setOutput('proceed', allowed ? 'true' : 'false');
+            if (!allowed) {
+              core.warning(`Ignoring 'approved' label from ${context.payload.sender.login} (permission: ${data.permission})`);
+            }
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.proceed == 'true'
+
+      - name: Determine which template was used
+        id: template
+        if: steps.gate.outputs.proceed == 'true'
+        run: |
+          if [ "${{ contains(github.event.issue.labels.*.name, 'region-update') }}" = "true" ]; then
+            echo "kind=update" >> "$GITHUB_OUTPUT"
+          else
+            echo "kind=new" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Parse new-region issue fields
+        id: parse_new
+        if: steps.gate.outputs.proceed == 'true' && steps.template.outputs.kind == 'new'
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          FIELDS_JSON: '[["Region name","name"],["Slug","slug"],["OSM relation ID","relation_id"]]'
+        run: python3 scripts/parse_issue_form.py
+
+      - name: Parse update-region issue fields
+        id: parse_update
+        if: steps.gate.outputs.proceed == 'true' && steps.template.outputs.kind == 'update'
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          FIELDS_JSON: '[["Existing slug","slug"],["OSM relation ID (optional override)","relation_id"]]'
+        run: python3 scripts/parse_issue_form.py
+
+      - name: Resolve fields to build
+        id: fields
+        if: steps.gate.outputs.proceed == 'true'
+        env:
+          TEMPLATE: ${{ steps.template.outputs.kind }}
+          NEW_SLUG: ${{ steps.parse_new.outputs.slug }}
+          NEW_RELATION_ID: ${{ steps.parse_new.outputs.relation_id }}
+          NEW_NAME: ${{ steps.parse_new.outputs.name }}
+          UPDATE_SLUG: ${{ steps.parse_update.outputs.slug }}
+          UPDATE_RELATION_ID: ${{ steps.parse_update.outputs.relation_id }}
+        run: python3 scripts/resolve_issue_fields.py
+
+  build:
+    needs: prepare
+    if: needs.prepare.outputs.proceed == 'true'
+    concurrency:
+      group: region-build-${{ github.event.issue.number }}
+      cancel-in-progress: false
+    uses: ./.github/workflows/build-region-pack.yml
+    with:
+      slug: ${{ needs.prepare.outputs.slug }}
+      name: ${{ needs.prepare.outputs.name }}
+      relation_id: ${{ needs.prepare.outputs.relation_id }}
+      issue_number: ${{ github.event.issue.number }}

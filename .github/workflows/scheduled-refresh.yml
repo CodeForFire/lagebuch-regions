@@ -1,0 +1,34 @@
+name: Scheduled region pack refresh
+
+on:
+  schedule:
+    # Semiannual: SRTM elevation is static and Landkreis road/POI data for
+    # an offline base map doesn't need faster refresh; urgent fixes go
+    # through the "Update existing region pack" issue template any time.
+    - cron: "0 3 1 1,7 *"
+  workflow_dispatch: {}
+
+jobs:
+  prepare-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      has_regions: ${{ steps.matrix.outputs.has_regions }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: matrix
+        run: python3 scripts/build_refresh_matrix.py
+
+  refresh:
+    needs: prepare-matrix
+    if: needs.prepare-matrix.outputs.has_regions == 'true'
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix: ${{ fromJson(needs.prepare-matrix.outputs.matrix) }}
+    uses: ./.github/workflows/build-region-pack.yml
+    with:
+      slug: ${{ matrix.slug }}
+      name: ${{ matrix.name }}
+      relation_id: ${{ matrix.relation_id }}
+      issue_number: ""

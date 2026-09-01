@@ -1,0 +1,38 @@
+name: Update existing region pack
+description: Rebuild an already-published region pack (fresher OSM/elevation data, or a boundary fix).
+title: "[Update region] "
+labels: ["region-update"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This rebuilds an existing region pack and bumps its version (e.g.
+        `ffb-v1` -> `ffb-v2`). A maintainer needs to add the `approved`
+        label before the build runs. Published packs also refresh
+        automatically every 6 months, so this is mainly for urgent fixes
+        in between.
+  - type: input
+    id: slug
+    attributes:
+      label: Existing slug
+      description: The slug of the pack to rebuild, as it appears in regions.json.
+      placeholder: ffb
+    validations:
+      required: true
+  - type: input
+    id: relation_id
+    attributes:
+      label: OSM relation ID (optional override)
+      description: >-
+        Leave blank to reuse the relation ID this pack was already built
+        from. Only set this if the boundary itself needs to change.
+      placeholder: "62595"
+    validations:
+      required: false
+  - type: textarea
+    id: reason
+    attributes:
+      label: Reason for update
+      description: Optional context for the changelog/PR description.
+    validations:
+      required: false
