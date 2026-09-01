@@ -12,5 +12,19 @@
     },
     "builtAt": "2026-08-31",
     "attribution": "© OpenStreetMap contributors (ODbL). Höhendaten: SRTM (NASA/USGS, gemeinfrei)."
+  },
+  {
+    "name": "Landkreis Starnberg",
+    "slug": "sta",
+    "downloadUrl": "https://github.com/CodeForFire/lagebuch-regions/releases/download/sta-v1/sta.zip",
+    "sizeBytes": 16798688,
+    "boundingBox": {
+      "minLat": 47.8199587,
+      "minLon": 11.128994,
+      "maxLat": 48.1364374,
+      "maxLon": 11.4334957
+    },
+    "builtAt": "2026-09-01",
+    "attribution": "© OpenStreetMap contributors (ODbL). Höhendaten: SRTM (NASA/USGS, gemeinfrei)."
   }
 ]
