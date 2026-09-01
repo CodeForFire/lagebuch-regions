@@ -1,0 +1,30 @@
+{
+  "_comment": "Maps Nominatim address.state (and, where Geofabrik publishes sub-extracts, address.state_district) to Geofabrik download slugs under https://download.geofabrik.de/europe/germany/. Bavaria is the only Bundesland with Regierungsbezirk-level extracts today; add more district maps here if Geofabrik starts publishing them for other states.",
+  "Baden-Württemberg": { "slug": "baden-wuerttemberg" },
+  "Bayern": {
+    "slug": "bayern",
+    "districts": {
+      "Oberbayern": "oberbayern",
+      "Niederbayern": "niederbayern",
+      "Oberpfalz": "oberpfalz",
+      "Oberfranken": "oberfranken",
+      "Mittelfranken": "mittelfranken",
+      "Unterfranken": "unterfranken",
+      "Schwaben": "schwaben"
+    }
+  },
+  "Berlin": { "slug": "berlin" },
+  "Brandenburg": { "slug": "brandenburg" },
+  "Bremen": { "slug": "bremen" },
+  "Hamburg": { "slug": "hamburg" },
+  "Hessen": { "slug": "hessen" },
+  "Mecklenburg-Vorpommern": { "slug": "mecklenburg-vorpommern" },
+  "Niedersachsen": { "slug": "niedersachsen" },
+  "Nordrhein-Westfalen": { "slug": "nordrhein-westfalen" },
+  "Rheinland-Pfalz": { "slug": "rheinland-pfalz" },
+  "Saarland": { "slug": "saarland" },
+  "Sachsen": { "slug": "sachsen" },
+  "Sachsen-Anhalt": { "slug": "sachsen-anhalt" },
+  "Schleswig-Holstein": { "slug": "schleswig-holstein" },
+  "Thüringen": { "slug": "thueringen" }
+}

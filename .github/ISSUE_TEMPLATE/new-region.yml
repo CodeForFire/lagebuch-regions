@@ -1,0 +1,42 @@
+name: New region pack request
+description: Request a new Wasserförderung region pack for a Landkreis (county), Germany only for now.
+title: "[New region] "
+labels: ["region-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This builds a new region pack automatically. It only supports
+        Landkreis / kreisfreie Stadt-sized regions (OSM admin_level 6) in
+        Germany for now. A maintainer needs to add the `approved` label
+        before the build runs.
+  - type: input
+    id: name
+    attributes:
+      label: Region name
+      description: Display name shown in the app, e.g. "Landkreis Fürstenfeldbruck".
+      placeholder: Landkreis Fürstenfeldbruck
+    validations:
+      required: true
+  - type: input
+    id: slug
+    attributes:
+      label: Slug
+      description: >-
+        Short lowercase id for this pack, used in file/release names (e.g.
+        "ffb"). Lowercase letters, digits and hyphens only.
+      placeholder: ffb
+    validations:
+      required: true
+  - type: input
+    id: relation_id
+    attributes:
+      label: OSM relation ID
+      description: >-
+        The numeric relation ID for the Kreis's administrative boundary on
+        openstreetmap.org (the number after "relation/" in the URL, no "R"
+        prefix). Look it up at https://www.openstreetmap.org or via
+        https://nominatim.openstreetmap.org.
+      placeholder: "62595"
+    validations:
+      required: true

@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Region pack format & process
+    url: https://github.com/CodeForFire/lagebuch-regions/blob/main/README.md
+    about: How region packs are built and published.
