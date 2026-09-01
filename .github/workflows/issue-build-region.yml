@@ -83,6 +83,10 @@ jobs:
     concurrency:
       group: region-build-${{ github.event.issue.number }}
       cancel-in-progress: false
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
     uses: ./.github/workflows/build-region-pack.yml
     with:
       slug: ${{ needs.prepare.outputs.slug }}
