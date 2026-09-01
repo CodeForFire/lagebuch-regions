@@ -22,7 +22,7 @@ jobs:
     steps:
       - name: Check sender has write access
         id: gate
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
@@ -36,7 +36,7 @@ jobs:
               core.warning(`Ignoring 'approved' label from ${context.payload.sender.login} (permission: ${data.permission})`);
             }
 
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.gate.outputs.proceed == 'true'
 
       - name: Determine which template was used
