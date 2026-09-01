@@ -79,11 +79,17 @@ jobs:
           git checkout -b "$BRANCH"
           git add regions.json region-sources.json
           git commit -m "Publish $SLUG ${{ steps.manifest.outputs.tag }}"
-          git push origin "HEAD:$BRANCH"
+          # Force-push: a retry after a partial failure (e.g. release or PR
+          # creation failing) recomputes the same tag/branch name, and this
+          # branch only ever holds this one commit, so overwriting it is safe.
+          git push --force origin "HEAD:$BRANCH"
 
       - name: Create release
         run: |
           TAG="${{ steps.manifest.outputs.tag }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release delete "$TAG" --yes --cleanup-tag
+          fi
           gh release create "$TAG" "build/$SLUG.zip" \
             --title "$NAME ($TAG)" \
             --notes "Built from OSM relation $RELATION_ID. © OpenStreetMap contributors (ODbL). Höhendaten: SRTM (NASA/USGS, gemeinfrei)."
@@ -93,11 +99,14 @@ jobs:
         run: |
           BRANCH="${{ steps.manifest.outputs.branch }}"
           TAG="${{ steps.manifest.outputs.tag }}"
-          URL=$(gh pr create \
-            --base main \
-            --head "$BRANCH" \
-            --title "Publish $NAME ($TAG)" \
-            --body "Automated region pack build for \`$SLUG\` (OSM relation $RELATION_ID), tag \`$TAG\`.")
+          URL=$(gh pr list --head "$BRANCH" --state open --json url --jq '.[0].url // empty')
+          if [ -z "$URL" ]; then
+            URL=$(gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title "Publish $NAME ($TAG)" \
+              --body "Automated region pack build for \`$SLUG\` (OSM relation $RELATION_ID), tag \`$TAG\`.")
+          fi
           echo "url=$URL" >> "$GITHUB_OUTPUT"
 
       - name: Comment success on issue
