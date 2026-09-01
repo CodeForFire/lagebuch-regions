@@ -37,7 +37,7 @@ jobs:
       ISSUE_NUMBER: ${{ inputs.issue_number }}
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v7
         with:
