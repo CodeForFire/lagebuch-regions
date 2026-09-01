@@ -3,13 +3,15 @@
 # using the overv/openstreetmap-tile-server image (Mapnik + osm2pgsql +
 # renderd), matching how the manual ffb-v1 pack was built.
 #
-# KNOWN RISK (see plan doc "Known risk to flag, not hide"): this is the one
-# step of the whole pipeline that hasn't actually run in CI before. The
-# exact volume/flag names below (particularly where rendered tiles land on
-# disk, and the renderd health-check endpoint) are based on that image's
-# published usage docs, not a live run in this repo. Confirm/adjust them
-# against the current image README during the first spike build (rebuilding
-# `ffb`) before relying on this for new regions.
+# render_list writes into mod_tile's on-disk cache as hashed binary
+# metatiles (TILEDIR/default/<z>/<hashed-path>/<n>.meta, each covering an
+# 8x8 tile block) -- not a plain {z}/{x}/{y}.png tree, and not reachable by
+# just bind-mounting the cache dir. The documented way to get a plain PNG
+# back out is the HTTP endpoint mod_tile/Apache serve at
+# /tile/{z}/{x}/{y}.png, which decodes the metatile on request. So we
+# pre-render with render_list (fast, bulk) to warm that cache, then fetch
+# each tile individually over HTTP into TILES_DIR (near-instant, served
+# from cache). Confirmed against a live import+render in this repo.
 set -euo pipefail
 
 : "${EXTRACT_PBF:?set EXTRACT_PBF to the clipped .osm.pbf path}"
@@ -31,9 +33,12 @@ docker run --rm \
 
 echo "Starting renderd/tile server ..."
 docker run -d --name "$CONTAINER_NAME" \
+  -p 127.0.0.1:0:80 \
   -v osm-data:/data/database/ \
-  -v "$TILES_DIR_ABS":/data/tiles/ \
   overv/openstreetmap-tile-server run
+
+HOST_PORT="$(docker port "$CONTAINER_NAME" 80/tcp | head -n1 | cut -d: -f2)"
+TILE_BASE_URL="http://127.0.0.1:$HOST_PORT/tile"
 
 cleanup() {
   docker stop "$CONTAINER_NAME" >/dev/null 2>&1 || true
@@ -85,5 +90,15 @@ echo "$TILE_RANGES" | while read -r z x_min x_max y_min y_max; do
     -x "$x_min" -X "$x_max" -y "$y_min" -Y "$y_max" \
     -n "$NPROC" -f
 done
+
+echo "Fetching rendered tiles from $TILE_BASE_URL into $TILES_DIR_ABS ..."
+echo "$TILE_RANGES" | while read -r z x_min x_max y_min y_max; do
+  for x in $(seq "$x_min" "$x_max"); do
+    mkdir -p "$TILES_DIR_ABS/$z/$x"
+    for y in $(seq "$y_min" "$y_max"); do
+      echo "$TILES_DIR_ABS/$z/$x/$y.png" "$TILE_BASE_URL/$z/$x/$y.png"
+    done
+  done
+done | xargs -P "$NPROC" -n2 curl -fsS --retry 3 -o
 
 echo "Tiles written under $TILES_DIR_ABS"

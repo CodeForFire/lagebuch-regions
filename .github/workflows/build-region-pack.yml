@@ -50,7 +50,9 @@ jobs:
 
       - name: Build pack
         id: build
-        run: bash scripts/run_build.sh 2>&1 | tee build_log.txt
+        run: |
+          set -o pipefail
+          bash scripts/run_build.sh 2>&1 | tee build_log.txt
 
       - name: Comment build failure on issue
         if: failure() && steps.build.outcome == 'failure' && inputs.issue_number != ''
