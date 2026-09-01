@@ -26,6 +26,10 @@ jobs:
       max-parallel: 1
       fail-fast: false
       matrix: ${{ fromJson(needs.prepare-matrix.outputs.matrix) }}
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
     uses: ./.github/workflows/build-region-pack.yml
     with:
       slug: ${{ matrix.slug }}
