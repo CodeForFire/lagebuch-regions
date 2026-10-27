@@ -1,5 +1,12 @@
 # lagebuch-regions
 
+> [!IMPORTANT]
+> **Superseded by [CodeForFire/lagebuch-geodata](https://github.com/CodeForFire/lagebuch-geodata).**
+> New packs are built there: DGM5 bare-earth heights as a Cloud Optimized GeoTIFF instead
+> of SRTM in the custom `region.dem` format, plus water points and addresses. This
+> repository stays online and unchanged so already-released app builds keep working, and is
+> archived once the app reads the new format (#12). Please open new pack requests there.
+
 Published Wasserförderung region packs for the [LageBuch](https://github.com/CodeForFire/lagebuch)
 fire-brigade incident-logging app. Each pack contains raster map tiles and an elevation grid for
 one Landkreis, downloadable directly from the app's Stammdaten → Einsatzgebiet screen.
